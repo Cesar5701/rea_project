@@ -1,40 +1,35 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8"/>
-  <title>Sala P2P (WebRTC)</title>
-  <style>
-    body { font-family: Arial; background:#f6f7fb; padding:20px;}
-    .card { max-width:900px; margin:auto; background:#fff; padding:24px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.06);}
-    input, button { padding:10px; border-radius:8px; border:1px solid #ddd;}
-    #log { background:#0f172a; color:#e2e8f0; padding:12px; height:220px; overflow:auto; border-radius:8px; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>🛰️ Sala P2P (WebRTC)</h1>
-    <div>
-      <input id="room" placeholder="Nombre de sala (ej. tesis2025)"/>
-      <button onclick="join()">Unirme</button>
-      <button onclick="leave()">Salir</button>
-    </div>
+{% extends "index.html" %}
+{% block title %}Sala P2P (WebRTC){% endblock %}
 
-    <h3>Chat</h3>
-    <div id="log"></div>
-    <div style="margin-top:8px">
-      <input id="msg" placeholder="Escribe un mensaje"/>
-      <button onclick="sendMsg()">Enviar</button>
-    </div>
+{% block content %}
+  <div class="bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold mb-4">🛰️ Sala P2P (WebRTC)</h2>
+    <div class="space-y-4">
+      <div>
+        <label for="room" class="block font-medium">Nombre de la Sala</label>
+        <input id="room" class="w-full p-2 border rounded-lg" placeholder="ej. tesis2025"/>
+        <div class="mt-2 space-x-2">
+          <button onclick="join()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Unirme</button>
+          <button onclick="leave()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">Salir</button>
+        </div>
+      </div>
 
-    <h3 style="margin-top:20px">Enviar archivo</h3>
-    <input type="file" id="fileInput"/>
-    <button onclick="sendFile()">Enviar archivo</button>
+      <h3 class="font-bold text-lg pt-4">Chat</h3>
+      <div id="log" class="bg-gray-900 text-gray-200 p-3 h-56 overflow-auto rounded-lg font-mono text-sm"></div>
+      <div class="flex space-x-2">
+        <input id="msg" class="w-full p-2 border rounded-lg" placeholder="Escribe un mensaje"/>
+        <button onclick="sendMsg()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Enviar</button>
+      </div>
+
+      <h3 class="font-bold text-lg pt-4">Enviar Archivo</h3>
+      <div class="flex space-x-2">
+        <input type="file" id="fileInput" class="w-full p-2 border rounded-lg"/>
+        <button onclick="sendFile()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Enviar Archivo</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Socket.IO CDN -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <!-- simple-peer CDN -->
   <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
-  <script src="/static/webrtc.js"></script>
-</body>
-</html>
+  <script src="{{ url_for('static', filename='webrtc.js') }}"></script>
+{% endblock %}
