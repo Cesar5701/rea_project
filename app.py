@@ -15,8 +15,10 @@ socketio = SocketIO(app)
 
 def get_conn():
     conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite.Row
+    conn.row_factory = sqlite3.Row # Corrección: debe ser sqlite3
     return conn
+
+# --- Rutas de la aplicación ---
 
 @app.route('/')
 def index():
