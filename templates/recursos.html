@@ -1,0 +1,24 @@
+{% extends "index.html" %}
+{% block title %}Lista de Recursos{% endblock %}
+{% block content %}
+  <h2 class="text-2xl font-bold mb-4">Lista de Recursos</h2>
+  <div class="grid gap-4">
+    {% for r in recursos %}
+      <div class="bg-white p-4 rounded-lg shadow-md">
+        <h3 class="font-bold text-lg">{{ r['titulo'] }}</h3>
+        <p class="text-gray-600">{{ r['descripcion'] }}</p>
+        <span class="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-indigo-100 text-indigo-700">{{ r['categoria'] }}</span>
+        <div class="mt-2">
+          {% if r['enlace'] %}
+            <a href="{{ r['enlace'] }}" target="_blank" class="text-indigo-600 hover:underline">Ver enlace</a>
+          {% endif %}
+          {% if r['cid'] %}
+            <span class="ml-2 text-sm text-gray-500">IPFS CID: {{ r['cid'] }}</span>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p class="text-gray-500">No hay recursos aún.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

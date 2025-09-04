@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <title>Sala P2P (WebRTC)</title>
+  <style>
+    body { font-family: Arial; background:#f6f7fb; padding:20px;}
+    .card { max-width:900px; margin:auto; background:#fff; padding:24px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.06);}
+    input, button { padding:10px; border-radius:8px; border:1px solid #ddd;}
+    #log { background:#0f172a; color:#e2e8f0; padding:12px; height:220px; overflow:auto; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🛰️ Sala P2P (WebRTC)</h1>
+    <div>
+      <input id="room" placeholder="Nombre de sala (ej. tesis2025)"/>
+      <button onclick="join()">Unirme</button>
+      <button onclick="leave()">Salir</button>
+    </div>
+
+    <h3>Chat</h3>
+    <div id="log"></div>
+    <div style="margin-top:8px">
+      <input id="msg" placeholder="Escribe un mensaje"/>
+      <button onclick="sendMsg()">Enviar</button>
+    </div>
+
+    <h3 style="margin-top:20px">Enviar archivo</h3>
+    <input type="file" id="fileInput"/>
+    <button onclick="sendFile()">Enviar archivo</button>
+  </div>
+
+  <!-- Socket.IO CDN -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <!-- simple-peer CDN -->
+  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
+  <script src="/static/webrtc.js"></script>
+</body>
+</html>

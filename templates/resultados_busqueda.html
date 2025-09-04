@@ -1,0 +1,24 @@
+{% extends "index.html" %}
+{% block title %}Resultados de Búsqueda{% endblock %}
+{% block content %}
+  <h2 class="text-2xl font-bold mb-4">Resultados para: "{{ query }}"</h2>
+  <div class="grid gap-4">
+    {% for r in resultados %}
+      <div class="bg-white p-4 rounded-lg shadow-md">
+        <h3 class="font-bold text-lg">{{ r['titulo'] }}</h3>
+        <p class="text-gray-600">{{ r['descripcion'] }}</p>
+        <span class="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-indigo-100 text-indigo-700">
+          {{ r['categoria'] }}
+        </span>
+        <span class="ml-2 text-sm text-gray-500">Score: {{ "%.3f"|format(r['score']) }}</span>
+        <div class="mt-2">
+          {% if r['enlace'] %}
+            <a href="{{ r['enlace'] }}" target="_blank" class="text-indigo-600 hover:underline">Abrir enlace</a>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p class="text-gray-500">No se encontraron resultados.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

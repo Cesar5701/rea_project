@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Plataforma REA{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <nav class="bg-indigo-600 text-white p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="font-bold text-xl">Plataforma REA</h1>
+      <div class="space-x-4">
+        <a href="{{ url_for('nuevo') }}" class="hover:underline">Nuevo</a>
+        <a href="{{ url_for('recursos') }}" class="hover:underline">Recursos</a>
+        <a href="{{ url_for('buscar_semantico') }}" class="hover:underline">Búsqueda Semántica</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container mx-auto p-6">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4">
+          {% for category, message in messages %}
+            <div class="p-3 rounded-lg 
+              {% if category == 'success' %}bg-green-100 text-green-700
+              {% elif category == 'error' %}bg-red-100 text-red-700
+              {% else %}bg-gray-100 text-gray-700{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
