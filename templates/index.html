@@ -4,16 +4,22 @@
   <meta charset="UTF-8">
   <title>{% block title %}Plataforma REA{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  </head>
+</head>
 <body class="bg-gray-100 text-gray-800">
   <nav class="bg-indigo-600 text-white p-4">
     <div class="container mx-auto flex justify-between items-center">
       <a href="{{ url_for('index') }}" class="font-bold text-xl">Plataforma REA</a>
-      <div class="space-x-4">
-        <a href="{{ url_for('nuevo') }}" class="hover:underline">Nuevo</a>
+      
+      <div class="space-x-4 flex items-center">
         {% if current_user.is_authenticated %}
-          <span class="text-indigo-200">Hola, {{ current_user.username }}</span>
-          <a href="{{ url_for('logout') }}" class="hover:underline">Cerrar Sesión</a>
+          <a href="{{ url_for('nuevo') }}" class="hover:underline">Nuevo</a>
+          <a href="{{ url_for('recursos') }}" class="hover:underline">Recursos</a>
+          <a href="{{ url_for('buscar_semantico') }}" class="hover:underline">Búsqueda Semántica</a>
+          <a href="{{ url_for('webrtc') }}" class="hover:underline">Sala P2P</a>
+          
+          <span class="text-indigo-200">|</span> <span class="font-semibold">Hola, {{ current_user.username }}</span>
+          <a href="{{ url_for('logout') }}" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1 rounded">Cerrar Sesión</a>
+        
         {% else %}
           <a href="{{ url_for('login') }}" class="hover:underline">Iniciar Sesión</a>
           <a href="{{ url_for('register') }}" class="hover:underline">Registrarse</a>
@@ -27,7 +33,7 @@
       {% if messages %}
         <div class="mb-4">
           {% for category, message in messages %}
-            <div class="p-3 rounded-lg
+            <div class="p-3 rounded-lg 
               {% if category == 'success' %}bg-green-100 text-green-700
               {% elif category == 'error' %}bg-red-100 text-red-700
               {% else %}bg-gray-100 text-gray-700{% endif %}">
@@ -39,9 +45,9 @@
     {% endwith %}
 
     {% block content %}
-      <div class="bg-white p-6 rounded-lg shadow-md">
+      <div class="bg-white p-6 rounded-lg shadow-md text-center">
         <h2 class="text-2xl font-bold">Bienvenido a la Plataforma de Recursos Educativos</h2>
-        <p class="mt-2 text-gray-600">Utiliza la navegación para añadir, ver o buscar recursos.</p>
+        <p class="mt-2 text-gray-600">Por favor, inicia sesión o regístrate para acceder a los recursos.</p>
       </div>
     {% endblock %}
   </main>
