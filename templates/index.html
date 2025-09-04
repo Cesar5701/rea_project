@@ -11,9 +11,13 @@
       <a href="{{ url_for('index') }}" class="font-bold text-xl">Plataforma REA</a>
       <div class="space-x-4">
         <a href="{{ url_for('nuevo') }}" class="hover:underline">Nuevo</a>
-        <a href="{{ url_for('recursos') }}" class="hover:underline">Recursos</a>
-        <a href="{{ url_for('buscar_semantico') }}" class="hover:underline">Búsqueda Semántica</a>
-        <a href="{{ url_for('webrtc') }}" class="hover:underline">Sala P2P</a>
+        {% if current_user.is_authenticated %}
+          <span class="text-indigo-200">Hola, {{ current_user.username }}</span>
+          <a href="{{ url_for('logout') }}" class="hover:underline">Cerrar Sesión</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="hover:underline">Iniciar Sesión</a>
+          <a href="{{ url_for('register') }}" class="hover:underline">Registrarse</a>
+        {% endif %}
       </div>
     </div>
   </nav>
