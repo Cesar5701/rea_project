@@ -1,16 +1,28 @@
 {% extends "index.html" %}
 {% block title %}Búsqueda Semántica{% endblock %}
 {% block content %}
-  <h2 class="text-2xl font-bold mb-4">Búsqueda Semántica</h2>
-  <form action="{{ url_for('buscar_semantico') }}" method="post" class="bg-white p-6 rounded-lg shadow-md space-y-4">
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+  <div class="text-center mb-8">
+    <h2 class="text-3xl font-bold text-buap-blue">Búsqueda Semántica</h2>
+    <p class="text-gray-500 mt-2">Encuentra recursos por el significado de tu consulta, no solo por palabras clave.</p>
+  </div>
+  
+  <form action="{{ url_for('buscar_semantico') }}" method="post" class="space-y-6">
     <div>
-      <label class="block font-medium">Consulta</label>
-      <input type="text" name="q" class="w-full p-2 border rounded-lg" placeholder="Escribe tu búsqueda..." required>
+      <label for="q" class="block font-semibold text-gray-700">Tu consulta de búsqueda</label>
+      <input type="text" name="q" id="q" class="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-buap-gold focus:border-transparent transition" placeholder="Ej: 'algoritmos de ordenamiento en Python'" required>
     </div>
+    
     <div>
-      <label class="block font-medium">Resultados (Top-K)</label>
-      <input type="number" name="k" class="w-20 p-2 border rounded-lg" value="5" min="1">
+      <label for="k" class="block font-semibold text-gray-700">Número de resultados</label>
+      <input type="number" name="k" id="k" class="w-24 mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-buap-gold focus:border-transparent transition" value="5" min="1">
     </div>
-    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Buscar</button>
+
+    <div class="pt-2">
+      <button type="submit" class="w-full bg-buap-blue text-white font-bold px-4 py-3 rounded-lg hover:bg-opacity-90 transition shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-buap-blue">
+        Buscar
+      </button>
+    </div>
   </form>
+</div>
 {% endblock %}
