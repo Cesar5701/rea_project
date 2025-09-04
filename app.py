@@ -1,10 +1,10 @@
-# app.py (fragmento principal, asume init_db ya creado)
+# app.py (fragmento principal)
 import os
 import sqlite3
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash
 from dotenv import load_dotenv
 from flask_socketio import SocketIO, emit, join_room, leave_room
-from ipfs_client import upload_to_ipfs  # si sigues usando IPFS
+from ipfs_client import upload_to_ipfs
 from nlp_utils import generar_embedding, clasificar_texto, embedding_to_blob, blob_to_embedding
 
 load_dotenv()
@@ -15,14 +15,14 @@ socketio = SocketIO(app)
 
 def get_conn():
     conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite.Row
     return conn
 
 @app.route('/')
 def index():
-    # Esta función se encargará de renderizar la plantilla para la página de inicio.
     return render_template('index.html')
 
+# SE RESTAURA LA RUTA /webrtc
 @app.route('/webrtc')
 def webrtc():
     """Renderiza la página de la sala P2P."""
@@ -30,13 +30,13 @@ def webrtc():
 
 @app.route('/nuevo', methods=['GET', 'POST'])
 def nuevo():
+    # ... (el resto de tu código sigue igual)
     if request.method == 'POST':
         titulo = request.form.get('titulo', '').strip()
         descripcion = request.form.get('descripcion', '').strip()
         enlace_manual = request.form.get('enlace', '').strip()
         categoria_manual = request.form.get('categoria', '').strip() or None
 
-        # archivo opcional -> ipfs
         cid = None
         gateway_url = enlace_manual or None
         filename = None
@@ -50,15 +50,12 @@ def nuevo():
                 flash(f"Error subiendo a IPFS: {e}", "error")
                 return redirect(request.url)
 
-        # 1) Clasificar automáticamente (si no venía categoría manual)
         texto_para_clasificar = f"{titulo} {descripcion}"
         categoria_detectada = categoria_manual or clasificar_texto(texto_para_clasificar)
 
-        # 2) Generar embedding y serializar
         emb_vec = generar_embedding(texto_para_clasificar)
         emb_blob = embedding_to_blob(emb_vec)
 
-        # Guardar en DB (embedding como BLOB)
         conn = get_conn()
         cur = conn.cursor()
         cur.execute("""
@@ -70,6 +67,7 @@ def nuevo():
         flash("Recurso guardado y clasificado: " + categoria_detectada, "success")
         return redirect(url_for('recursos'))
     return render_template('nuevo.html')
+
 
 @app.route('/recursos')
 def recursos():
@@ -110,13 +108,11 @@ def buscar_semantico():
 
     return render_template('buscar_semantico.html')
 
-# --- Manejadores de Socket.IO para WebRTC Signaling ---
-
+# --- Manejadores de Socket.IO ---
 @socketio.on('join')
 def on_join(data):
     room = data['room']
     join_room(room)
-    # Notifica a los otros en la sala que alguien se unió
     emit('system', {'msg': f'Un nuevo peer se ha unido a la sala.'}, to=room, include_self=False)
 
 @socketio.on('leave')
@@ -127,14 +123,9 @@ def on_leave(data):
 
 @socketio.on('signal')
 def on_signal(data):
-    # Retransmite el mensaje de señalización al otro peer en la sala
-    # El cliente se encarga de crear el peer y manejar la señal
     room = data['room']
     emit('signal', {'data': data['data']}, to=room, include_self=False)
 
-
-# --- Bloque para iniciar la aplicación ---
+# --- Bloque para iniciar ---
 if __name__ == '__main__':
-    # El modo debug es útil para desarrollo, ya que recarga automáticamente
-    # el servidor cuando haces cambios en el código.
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
