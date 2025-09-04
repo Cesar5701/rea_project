@@ -39,6 +39,15 @@ cur.execute("""
     )
 """)
 
+cur.execute("""
+    CREATE TABLE IF NOT EXISTS usuarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user'
+    )
+""")
+
 conn.commit()  # Save the changes in the database
 conn.close()  # Close the connection to the database
 print("DB initialized: rea.db")  # Print a message indicating that the database has been initialized
