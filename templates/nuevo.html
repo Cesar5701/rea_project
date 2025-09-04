@@ -25,4 +25,11 @@
     </div>
     <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Guardar</button>
   </form>
+
+  <script>
+  document.getElementById('nuevo-form').addEventListener('submit', function() {
+    document.querySelector('button[type="submit"]').disabled = true;
+    document.getElementById('spinner').classList.remove('hidden');
+  });
+  </script>
 {% endblock %}
