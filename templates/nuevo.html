@@ -1,35 +1,48 @@
 {% extends "index.html" %}
 {% block title %}Nuevo Recurso{% endblock %}
 {% block content %}
-  <h2 class="text-2xl font-bold mb-4">Agregar Recurso</h2>
-  <form action="{{ url_for('nuevo') }}" method="post" enctype="multipart/form-data" class="space-y-4 bg-white p-6 rounded-lg shadow-md">
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+  <h2 class="text-3xl font-bold text-buap-blue mb-8">Añadir Nuevo Recurso</h2>
+  
+  <form id="nuevo-form" action="{{ url_for('nuevo') }}" method="post" enctype="multipart/form-data" class="space-y-6">
+    
     <div>
-      <label class="block font-medium">Título</label>
-      <input type="text" name="titulo" class="w-full p-2 border rounded-lg" required>
+      <label for="titulo" class="block font-semibold text-gray-700">Título</label>
+      <input type="text" name="titulo" id="titulo" class="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-buap-gold focus:border-transparent transition" required>
     </div>
+    
     <div>
-      <label class="block font-medium">Descripción</label>
-      <textarea name="descripcion" class="w-full p-2 border rounded-lg"></textarea>
+      <label for="descripcion" class="block font-semibold text-gray-700">Descripción</label>
+      <textarea name="descripcion" id="descripcion" rows="4" class="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-buap-gold focus:border-transparent transition"></textarea>
     </div>
+    
     <div>
-      <label class="block font-medium">Categoría (opcional)</label>
-      <input type="text" name="categoria" class="w-full p-2 border rounded-lg">
+      <label for="categoria" class="block font-semibold text-gray-700">Categoría (opcional)</label>
+      <input type="text" name="categoria" id="categoria" placeholder="Se clasificará automáticamente si se deja en blanco" class="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-buap-gold focus:border-transparent transition">
     </div>
-    <div>
-      <label class="block font-medium">Enlace (opcional)</label>
-      <input type="url" name="enlace" class="w-full p-2 border rounded-lg">
-    </div>
-    <div>
-      <label class="block font-medium">Archivo (opcional)</label>
-      <input type="file" name="archivo" class="w-full p-2 border rounded-lg">
-    </div>
-    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Guardar</button>
-  </form>
 
-  <script>
+    <div>
+      <label for="enlace" class="block font-semibold text-gray-700">Enlace (opcional)</label>
+      <input type="url" name="enlace" id="enlace" class="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-buap-gold focus:border-transparent transition">
+    </div>
+
+    <div>
+      <label for="archivo" class="block font-semibold text-gray-700">Archivo (opcional)</label>
+      <input type="file" name="archivo" id="archivo" class="w-full mt-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-buap-blue hover:file:bg-blue-100">
+    </div>
+
+    <div class="flex items-center space-x-4 pt-4">
+      <button type="submit" class="bg-buap-blue text-white font-bold px-6 py-3 rounded-lg hover:bg-opacity-90 transition shadow-md">Guardar Recurso</button>
+      <div id="spinner" class="hidden w-6 h-6 border-t-2 border-b-2 border-buap-blue rounded-full animate-spin"></div>
+    </div>
+  </form>
+</div>
+
+<script>
   document.getElementById('nuevo-form').addEventListener('submit', function() {
     document.querySelector('button[type="submit"]').disabled = true;
+    document.querySelector('button[type="submit"]').classList.add('opacity-50');
     document.getElementById('spinner').classList.remove('hidden');
   });
-  </script>
+</script>
 {% endblock %}
