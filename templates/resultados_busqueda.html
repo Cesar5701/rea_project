@@ -1,24 +1,32 @@
 {% extends "index.html" %}
 {% block title %}Resultados de Búsqueda{% endblock %}
 {% block content %}
-  <h2 class="text-2xl font-bold mb-4">Resultados para: "{{ query }}"</h2>
-  <div class="grid gap-4">
+  <div class="mb-6">
+      <h2 class="text-3xl font-bold text-buap-blue">Resultados de Búsqueda</h2>
+      <p class="text-gray-600 mt-1">Para la consulta: <span class="font-semibold">"{{ query }}"</span></p>
+  </div>
+  
+  <div class="space-y-4">
     {% for r in resultados %}
-      <div class="bg-white p-4 rounded-lg shadow-md">
-        <h3 class="font-bold text-lg">{{ r['titulo'] }}</h3>
-        <p class="text-gray-600">{{ r['descripcion'] }}</p>
-        <span class="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-indigo-100 text-indigo-700">
-          {{ r['categoria'] }}
-        </span>
-        <span class="ml-2 text-sm text-gray-500">Score: {{ "%.3f"|format(r['score']) }}</span>
-        <div class="mt-2">
+      <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-200 flex items-center">
+        <div class="p-4 text-center border-r">
+          <div class="text-sm text-gray-500">Relevancia</div>
+          <div class="text-xl font-bold text-buap-blue">{{ "%.2f"|format(r['score'] * 100) }}%</div>
+        </div>
+        <div class="p-4 flex-grow">
+          <div class="tracking-wide text-sm text-buap-blue font-semibold">{{ r['categoria'] | upper }}</div>
+          <h3 class="block mt-1 text-lg leading-tight font-bold text-black">{{ r['titulo'] }}</h3>
+          <p class="mt-1 text-gray-500">{{ r['descripcion'] }}</p>
           {% if r['enlace'] %}
-            <a href="{{ r['enlace'] }}" target="_blank" class="text-indigo-600 hover:underline">Abrir enlace</a>
+            <a href="{{ r['enlace'] }}" target="_blank" class="text-sm font-semibold text-buap-blue hover:underline mt-2 inline-block">Visitar Enlace &rarr;</a>
           {% endif %}
         </div>
       </div>
     {% else %}
-      <p class="text-gray-500">No se encontraron resultados.</p>
+      <div class="text-center py-12 bg-white rounded-xl shadow-md border">
+        <h3 class="text-xl font-medium text-gray-700">No se encontraron resultados</h3>
+        <p class="text-gray-500 mt-2">Intenta con otra consulta o palabras más generales.</p>
+      </div>
     {% endfor %}
   </div>
 {% endblock %}
