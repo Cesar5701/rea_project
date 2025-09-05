@@ -27,8 +27,8 @@ Sigue estos pasos para poner en marcha el proyecto en tu entorno local.
 
 1.  **Clonar el repositorio:**
     ```bash
-    git clone [https://github.com/tu-usuario/tu-repositorio.git](https://github.com/tu-usuario/tu-repositorio.git)
-    cd tu-repositorio
+    git clone https://github.com/Cesar5701/rea_project.git
+    cd rea_project
     ```
 
 2.  **Crear y activar un entorno virtual:**
@@ -73,7 +73,9 @@ Sigue estos pasos para poner en marcha el proyecto en tu entorno local.
 2.  La aplicación se ejecutará en modo de depuración en `http://127.0.0.1:5000`.
     > **Importante:** La primera vez que inicies la aplicación, el script `nlp_utils.py` descargará los modelos de Hugging Face. Este proceso puede tardar varios minutos dependiendo de tu conexión a internet. Las siguientes veces que inicies la app será instantáneo.
 
-## 📂 Estructura del Proyecto
+## 📂 Estructura del proyecto
+
+```bash
 .
 ├── app.py              # Lógica principal de Flask, rutas y Socket.IO
 ├── init_db.py          # Script para crear la base de datos
@@ -84,9 +86,9 @@ Sigue estos pasos para poner en marcha el proyecto en tu entorno local.
 ├── static/             # Archivos estáticos (JS, CSS, imágenes)
 │   ├── images/
 │   └── webrtc.js
-└── templates/          # Plantillas HTML de Jinja2
-├── index.html      # Plantilla base
-├── login.html
-├── register.html
-├── nuevo.html
-└── ...
+├── templates/          # Plantillas HTML de Jinja2
+│   ├── index.html          # Plantilla base
+│   ├── login.html
+│   ├── register.html
+│   └── nuevo.html
+└── rea.db              # Base de datos
