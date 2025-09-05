@@ -74,3 +74,19 @@ Sigue estos pasos para poner en marcha el proyecto en tu entorno local.
     > **Importante:** La primera vez que inicies la aplicación, el script `nlp_utils.py` descargará los modelos de Hugging Face. Este proceso puede tardar varios minutos dependiendo de tu conexión a internet. Las siguientes veces que inicies la app será instantáneo.
 
 ## 📂 Estructura del Proyecto
+.
+├── app.py              # Lógica principal de Flask, rutas y Socket.IO
+├── init_db.py          # Script para crear la base de datos
+├── ipfs_client.py      # Cliente para interactuar con Web3.Storage (IPFS)
+├── nlp_utils.py        # Funciones para generar embeddings y clasificar texto
+├── requirements.txt    # Dependencias de Python
+├── .env                # (Debes crearlo) Variables de entorno
+├── static/             # Archivos estáticos (JS, CSS, imágenes)
+│   ├── images/
+│   └── webrtc.js
+└── templates/          # Plantillas HTML de Jinja2
+├── index.html      # Plantilla base
+├── login.html
+├── register.html
+├── nuevo.html
+└── ...
