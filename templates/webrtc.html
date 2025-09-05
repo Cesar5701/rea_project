@@ -2,34 +2,44 @@
 {% block title %}Sala P2P (WebRTC){% endblock %}
 
 {% block content %}
-  <div class="bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-4">🛰️ Sala P2P (WebRTC)</h2>
-    <div class="space-y-4">
-      <div>
-        <label for="room" class="block font-medium">Nombre de la Sala</label>
-        <input id="room" class="w-full p-2 border rounded-lg" placeholder="ej. tesis2025"/>
-        <div class="mt-2 space-x-2">
-          <button onclick="join()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Unirme</button>
-          <button onclick="leave()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">Salir</button>
-        </div>
-      </div>
-
-      <h3 class="font-bold text-lg pt-4">Chat</h3>
-      <div id="log" class="bg-gray-900 text-gray-200 p-3 h-56 overflow-auto rounded-lg font-mono text-sm"></div>
-      <div class="flex space-x-2">
-        <input id="msg" class="w-full p-2 border rounded-lg" placeholder="Escribe un mensaje"/>
-        <button onclick="sendMsg()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Enviar</button>
-      </div>
-
-      <h3 class="font-bold text-lg pt-4">Enviar Archivo</h3>
-      <div class="flex space-x-2">
-        <input type="file" id="fileInput" class="w-full p-2 border rounded-lg"/>
-        <button onclick="sendFile()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Enviar Archivo</button>
+<div class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+  <div class="text-center mb-8">
+      <h2 class="text-3xl font-bold text-blue-800">Sala de Colaboración P2P</h2>
+      <p class="text-gray-500 mt-2">Comunícate y comparte archivos directamente con otros usuarios.</p>
+  </div>
+  
+  <div class="space-y-6">
+    <div class="p-4 bg-gray-50 rounded-lg border">
+      <label for="room" class="block font-semibold text-gray-700">Nombre de la Sala</label>
+      <div class="flex items-center space-x-2 mt-2">
+        <input id="room" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition" placeholder="ej. proyecto-final-2025"/>
+        <button onclick="join()" class="bg-blue-800 text-white font-bold px-5 py-3 rounded-lg hover:bg-opacity-90 transition shadow-md whitespace-nowrap">Unirme</button>
+        <button onclick="leave()" class="bg-gray-600 text-white font-bold px-5 py-3 rounded-lg hover:bg-gray-700 transition shadow-md">Salir</button>
       </div>
     </div>
-  </div>
 
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
-  <script src="{{ url_for('static', filename='webrtc.js') }}"></script>
+    <div>
+      <h3 class="font-semibold text-gray-700 mb-2">Chat de la Sala</h3>
+      <div id="log" class="bg-gray-100 p-4 h-64 overflow-auto rounded-lg border font-mono text-sm text-gray-800"></div>
+      <div class="flex space-x-2 mt-2">
+        <input id="msg" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition" placeholder="Escribe un mensaje..."/>
+        <button onclick="sendMsg()" class="bg-yellow-500 text-blue-800 font-bold px-5 py-3 rounded-lg hover:bg-yellow-600 transition shadow-md">Enviar</button>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="font-semibold text-gray-700 mb-2">Compartir Archivo</h3>
+        <input type="file" id="fileInput" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100"/>
+      <button onclick="sendFile()" class="mt-3 w-full bg-blue-800 text-white font-bold px-4 py-3 rounded-lg hover:bg-opacity-90 transition shadow-md">Enviar Archivo Seleccionado</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dependencias de JavaScript -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
+
+<!-- Tu código de cliente -->
+<script src="{{ url_for('static', filename='webrtc.js') }}"></script>
 {% endblock %}
+
