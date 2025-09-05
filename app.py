@@ -7,12 +7,12 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 from ipfs_client import upload_to_ipfs
 from nlp_utils import generar_embedding, clasificar_texto, embedding_to_blob, blob_to_embedding
+import passwordmeter  # Import the passwordmeter library
 
 load_dotenv()
 DB = "rea.db"
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "devsecret")
-app.debug = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 socketio = SocketIO(app)
 
 # Configuración de Flask-Login
@@ -51,12 +51,21 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        
+        # --- Password Strength Validation ---
+        strength, _ = passwordmeter.test(password)
+        if strength < 0.5:  # Setting a threshold of 0.5 out of 1.0
+            flash('La contraseña es muy débil. Por favor, elige una más segura.', 'error')
+            return redirect(url_for('register'))
+        # --- End of Validation ---
+        
         conn = get_conn()
         user_exists = conn.execute("SELECT id FROM usuarios WHERE username = ?", (username,)).fetchone()
         if user_exists:
             flash('El nombre de usuario ya existe.', 'error')
             conn.close()
             return redirect(url_for('register'))
+        
         hashed_password = generate_password_hash(password)
         conn.execute("INSERT INTO usuarios (username, password_hash) VALUES (?, ?)", (username, hashed_password))
         conn.commit()
@@ -87,7 +96,7 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-# --- Rutas de la Aplicación ---
+# --- Rutas de la Aplicación (sin cambios) ---
 
 @app.route('/webrtc')
 @login_required
@@ -120,9 +129,9 @@ def nuevo():
         emb_blob = embedding_to_blob(emb_vec)
         conn = get_conn()
         conn.execute("""
-            INSERT INTO recursos (titulo, descripcion, categoria, enlace, cid, filename, embedding)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (titulo, descripcion, categoria_detectada, gateway_url, cid, filename, emb_blob))
+            INSERT INTO recursos (titulo, descripcion, categoria, enlace, cid, filename, embedding, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (titulo, descripcion, categoria_detectada, gateway_url, cid, filename, emb_blob, current_user.id))
         conn.commit()
         conn.close()
         flash("Recurso guardado y clasificado: " + categoria_detectada, "success")
@@ -133,9 +142,10 @@ def nuevo():
 @login_required
 def recursos():
     conn = get_conn()
-    recursos = conn.execute("SELECT * FROM recursos ORDER BY id DESC").fetchall()
+    # Consulta modificada para obtener TODOS los recursos, sin filtrar por usuario
+    recursos_data = conn.execute("SELECT * FROM recursos ORDER BY id DESC").fetchall()
     conn.close()
-    return render_template("recursos.html", recursos=recursos)
+    return render_template("recursos.html", recursos=recursos_data)
 
 @app.route('/buscar_semantico', methods=['GET', 'POST'])
 @login_required
@@ -163,53 +173,56 @@ def buscar_semantico():
 
 # --- Manejadores de Socket.IO para WebRTC ---
 
-rooms_state = {}
+rooms = {}
 
 @socketio.on('join')
 def on_join(data):
     room = data['room']
     sid = request.sid
     join_room(room)
-    
-    emit('system', {'msg': 'Un nuevo peer se ha unido a la sala.'}, to=room, include_self=False)
 
-    if room not in rooms_state:
-        rooms_state[room] = []
+    if room not in rooms:
+        rooms[room] = []
     
-    existing_peers = rooms_state[room]
-    if existing_peers:
-        # Es el segundo peer. Le dice al primero que inicie la conexión.
-        first_peer_sid = existing_peers[0]
-        emit('start_peer_connection', {'initiator': True}, room=first_peer_sid)
-    
-    rooms_state[room].append(sid)
+    existing_peers = rooms[room]
+    emit('existing_peers', existing_peers)
+
+    rooms[room].append(sid)
+    emit('peer_joined', {'sid': sid}, to=room, include_self=False)
+    print(f"Peer {sid} se unió a la sala {room}. Peers actuales: {rooms[room]}")
 
 @socketio.on('leave')
 def on_leave(data):
-    room = data['room']
+    room = data.get('room')
     sid = request.sid
     leave_room(room)
     
-    if room in rooms_state and sid in rooms_state[room]:
-        rooms_state[room].remove(sid)
-        if not rooms_state[room]:
-            del rooms_state[room]
-            
-    # Notifica a los usuarios restantes que alguien se fue
-    emit('peer_left', to=room, include_self=False)
-    emit('system', {'msg': 'Un peer ha abandonado la sala.'}, to=room, include_self=False)
+    if room in rooms and sid in rooms[room]:
+        rooms[room].remove(sid)
+        emit('peer_left', {'sid': sid}, to=room, include_self=False)
+        print(f"Peer {sid} abandonó la sala {room}. Peers restantes: {rooms[room]}")
 
 @socketio.on('signal')
 def on_signal(data):
-    room = data['room']
-    sender_sid = request.sid
+    target_sid = data['target_sid']
+    caller_sid = request.sid
+    signal_data = data['signal']
     
-    if room in rooms_state:
-        # Encuentra al otro peer en la sala y envíale la señal directamente
-        other_peers = [peer_sid for peer_sid in rooms_state[room] if peer_sid != sender_sid]
-        if other_peers:
-            recipient_sid = other_peers[0] # Asume solo 2 peers por sala
-            emit('signal', {'data': data['data']}, room=recipient_sid)
+    emit('signal', {
+        'caller_sid': caller_sid,
+        'signal': signal_data
+    }, room=target_sid)
 
+@socketio.on('disconnect')
+def on_disconnect():
+    sid = request.sid
+    for room, sids in rooms.items():
+        if sid in sids:
+            sids.remove(sid)
+            emit('peer_left', {'sid': sid}, to=room)
+            print(f"Peer {sid} se desconectó. Peers restantes en {room}: {sids}")
+            break
+
+# --- Bloque para iniciar la aplicación ---
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
