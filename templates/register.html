@@ -13,7 +13,8 @@
     
     <div>
       <label for="password" class="block font-medium text-gray-700">Contraseña</label>
-      <input type="password" name="password" id="password" class="w-full mt-1 p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+      <input type="password" name="password" id="password" class="w-full mt-1 p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required onkeyup="checkPasswordStrength();">
+      <div id="password-strength-status" class="mt-2 text-sm"></div>
     </div>
     
     <div>
@@ -27,4 +28,53 @@
     ¿Ya tienes una cuenta? <a href="{{ url_for('login') }}" class="font-medium text-indigo-600 hover:underline">Inicia sesión</a>
   </p>
 </div>
+
+<script>
+function checkPasswordStrength() {
+    var password = document.getElementById("password").value;
+    var strength = 0;
+    var strengthText = "";
+    var strengthClass = "";
+
+    if (password.length >= 8) {
+        strength += 1;
+    }
+    if (password.match(/[a-z]+/)) {
+        strength += 1;
+    }
+    if (password.match(/[A-Z]+/)) {
+        strength += 1;
+    }
+    if (password.match(/[0-9]+/)) {
+        strength += 1;
+    }
+    if (password.match(/[$@#&!]+/)) {
+        strength += 1;
+    }
+
+    var status = document.getElementById("password-strength-status");
+
+    switch (strength) {
+        case 0:
+        case 1:
+        case 2:
+            strengthText = "Muy Débil";
+            strengthClass = "text-red-500";
+            break;
+        case 3:
+            strengthText = "Débil";
+            strengthClass = "text-orange-500";
+            break;
+        case 4:
+            strengthText = "Buena";
+            strengthClass = "text-yellow-500";
+            break;
+        case 5:
+            strengthText = "Fuerte";
+            strengthClass = "text-green-500";
+            break;
+    }
+    status.innerHTML = "Fortaleza: <span class='" + strengthClass + "'>" + strengthText + "</span>";
+}
+</script>
 {% endblock %}
