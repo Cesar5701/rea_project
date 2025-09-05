@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>{% block title %}REA BUAP{% endblock %}</title>
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16x16.png">
+  <link rel="manifest" href="/static/images/site.webmanifest">
+    
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://rsms.me/">
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
@@ -26,7 +33,7 @@
   <nav class="bg-buap-blue shadow-md">
     <div class="container mx-auto px-6 py-3 flex justify-between items-center">
       <a href="{{ url_for('index') }}" class="flex items-center space-x-3">
-        <img src="https://www.cs.buap.mx/storage/app/media/uploaded-files/logo-fcc-2021-blanco.png" alt="Logo FCC BUAP" class="h-10">
+        <img src="/static/images/logo-rea-buap-1-1.png" alt="Logo REA BUAP" class="h-12">
         <span class="text-xl font-semibold text-white tracking-wider">Plataforma REA</span>
       </a>
       
