@@ -1,6 +1,8 @@
 import os
 import sqlite3
-from flask import Flask, render_template, request, redirect, url_for, flash
+# 1. Se importa la herramienta para manejar duraciones de tiempo
+from datetime import timedelta
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from dotenv import load_dotenv
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -13,6 +15,11 @@ load_dotenv()
 DB = "rea.db"
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "devsecret")
+
+# 2. CONFIGURACIÓN DE EXPIRACIÓN DE SESIÓN EN EL BACKEND
+# Se establece la duración máxima de inactividad de una sesión en 10 minutos.
+app.permanent_session_lifetime = timedelta(minutes=5)
+
 socketio = SocketIO(app)
 
 # Configuración de Flask-Login
@@ -21,19 +28,27 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 class User(UserMixin):
-    def __init__(self, id, username, role):
+    def __init__(self, id, email, role):
         self.id = id
-        self.username = username
+        self.email = email
         self.role = role
+        self.username = email.split('@')[0]
 
 @login_manager.user_loader
 def load_user(user_id):
     conn = get_conn()
-    user_data = conn.execute("SELECT id, username, role FROM usuarios WHERE id = ?", (user_id,)).fetchone()
+    user_data = conn.execute("SELECT id, email, role FROM usuarios WHERE id = ?", (user_id,)).fetchone()
     conn.close()
     if user_data:
-        return User(id=user_data['id'], username=user_data['username'], role=user_data['role'])
+        return User(id=user_data['id'], email=user_data['email'], role=user_data['role'])
     return None
+
+# 3. FUNCIÓN PARA REINICIAR EL CONTADOR DE INACTIVIDAD
+# Esta función se ejecuta con cada petición del usuario (cada vez que carga una página o envía un formulario).
+# Marca la sesión como permanente, lo que activa el contador de 10 minutos.
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
 
 def get_conn():
     conn = sqlite3.connect(DB)
@@ -49,8 +64,12 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
+
+        if not email.endswith('@alumno.buap.mx'):
+            flash('Solo se permiten registros con el correo institucional "@alumno.buap.mx".', 'error')
+            return redirect(url_for('register'))
         
         strength, _ = passwordmeter.test(password)
         if strength < 0.5:
@@ -58,34 +77,36 @@ def register():
             return redirect(url_for('register'))
         
         conn = get_conn()
-        user_exists = conn.execute("SELECT id FROM usuarios WHERE username = ?", (username,)).fetchone()
+        user_exists = conn.execute("SELECT id FROM usuarios WHERE email = ?", (email,)).fetchone()
         if user_exists:
-            flash('El nombre de usuario ya existe.', 'error')
+            flash('Ese correo electrónico ya está registrado.', 'error')
             conn.close()
             return redirect(url_for('register'))
         
         hashed_password = generate_password_hash(password)
-        conn.execute("INSERT INTO usuarios (username, password_hash) VALUES (?, ?)", (username, hashed_password))
+        conn.execute("INSERT INTO usuarios (email, password_hash) VALUES (?, ?)", (email, hashed_password))
         conn.commit()
         conn.close()
-        flash('¡Registro exitoso! Por favor, inicia sesión.', 'success')
+        flash('¡Registro exitoso! Por favor, inicia sesión con tu correo.', 'success')
         return redirect(url_for('login'))
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
         conn = get_conn()
-        user_data = conn.execute("SELECT id, username, password_hash, role FROM usuarios WHERE username = ?", (username,)).fetchone()
+        user_data = conn.execute("SELECT id, email, password_hash, role FROM usuarios WHERE email = ?", (email,)).fetchone()
         conn.close()
         if user_data and check_password_hash(user_data['password_hash'], password):
-            user = User(id=user_data['id'], username=user_data['username'], role=user_data['role'])
+            user = User(id=user_data['id'], email=user_data['email'], role=user_data['role'])
             login_user(user)
+            # Marcar la sesión como permanente desde el inicio de sesión
+            session.permanent = True
             return redirect(url_for('index'))
         else:
-            flash('Usuario o contraseña incorrectos.', 'error')
+            flash('Correo o contraseña incorrectos.', 'error')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -95,7 +116,6 @@ def logout():
     return redirect(url_for('index'))
 
 # --- Rutas de la Aplicación ---
-
 @app.route('/webrtc')
 @login_required
 def webrtc():
@@ -106,14 +126,13 @@ def webrtc():
 def nuevo():
     if request.method == 'POST':
         titulo = request.form.get('titulo', '').strip()
-        descripcion = request.form.get('descripcion', '').strip()
-        enlace_manual = request.form.get('enlace', '').strip()
-        categoria_manual = request.form.get('categoria', '').strip() or None
-        
         if not titulo:
             flash("El título es un campo obligatorio.", "error")
             return redirect(request.url)
-
+        
+        descripcion = request.form.get('descripcion', '').strip()
+        enlace_manual = request.form.get('enlace', '').strip()
+        categoria_manual = request.form.get('categoria', '').strip() or None
         cid = None
         gateway_url = enlace_manual or None
         filename = None
@@ -127,22 +146,19 @@ def nuevo():
             except Exception as e:
                 flash(f"Error subiendo a IPFS: {e}", "error")
                 return redirect(request.url)
-
-        # --- MEJORA: Bloque Try/Except para NLP ---
         try:
             texto_para_clasificar = f"{titulo} {descripcion}"
             categoria_detectada = categoria_manual or clasificar_texto(texto_para_clasificar)
             emb_vec = generar_embedding(texto_para_clasificar)
             emb_blob = embedding_to_blob(emb_vec)
-            flash_message = f"Recurso guardado y clasificado: {categoria_detectada}"
+            flash_message = "Recurso guardado y clasificado: " + categoria_detectada
             flash_category = "success"
         except Exception as e:
-            print(f"ERROR en NLP: {e}") # Log del error para depuración
-            categoria_detectada = categoria_manual or "Sin clasificar" # Valor por defecto
-            emb_blob = None # No guardar embedding si falla
+            print(f"ERROR en NLP: {e}")
+            categoria_detectada = categoria_manual or "Sin clasificar"
+            emb_blob = None
             flash_message = "Recurso guardado, pero ocurrió un error al clasificarlo automáticamente."
             flash_category = "warning"
-        # --- FIN DE LA MEJORA ---
 
         conn = get_conn()
         conn.execute("""
@@ -151,10 +167,8 @@ def nuevo():
         """, (titulo, descripcion, categoria_detectada, gateway_url, cid, filename, emb_blob, current_user.id))
         conn.commit()
         conn.close()
-        
         flash(flash_message, flash_category)
         return redirect(url_for('recursos'))
-        
     return render_template('nuevo.html')
 
 @app.route('/recursos')
@@ -171,85 +185,71 @@ def buscar_semantico():
     if request.method == 'POST':
         q = request.form.get('q', '').strip()
         top_k = int(request.form.get('k', 5))
-
         if not q:
             flash("Por favor, introduce una consulta para buscar.", "error")
             return render_template('buscar_semantico.html')
-
         q_emb = generar_embedding(q)
         conn = get_conn()
         rows = conn.execute("SELECT id, titulo, descripcion, categoria, enlace, cid, embedding FROM recursos").fetchall()
         conn.close()
-        
         import numpy as np
         results = []
         for r in rows:
             if not r["embedding"]: continue
             try:
                 emb_stored = blob_to_embedding(r["embedding"])
-                # Añadir una pequeña constante (epsilon) al denominador para evitar división por cero
                 cos = float(np.dot(q_emb, emb_stored) / (np.linalg.norm(q_emb) * np.linalg.norm(emb_stored) + 1e-9))
                 results.append({**dict(r), "score": cos})
-            except Exception as e:
-                print(f"Error al procesar embedding del recurso ID {r['id']}: {e}")
+            except:
                 continue
-                
         results_sorted = sorted(results, key=lambda x: x["score"], reverse=True)[:top_k]
         return render_template("resultados_busqueda.html", resultados=results_sorted, query=q)
     return render_template('buscar_semantico.html')
 
 # --- Manejadores de Socket.IO para WebRTC ---
-
-rooms = {}
-
+rooms = {} 
 @socketio.on('join')
 def on_join(data):
     room = data['room']
     sid = request.sid
+    username = current_user.username
     join_room(room)
-
     if room not in rooms:
-        rooms[room] = []
-    
+        rooms[room] = {}
     existing_peers = rooms[room]
     emit('existing_peers', existing_peers)
-
-    rooms[room].append(sid)
-    emit('peer_joined', {'sid': sid}, to=room, include_self=False)
-    print(f"Peer {sid} se unió a la sala {room}. Peers actuales: {rooms[room]}")
+    rooms[room][sid] = username
+    emit('peer_joined', {'sid': sid, 'username': username}, to=room, include_self=False)
 
 @socketio.on('leave')
 def on_leave(data):
     room = data.get('room')
     sid = request.sid
     leave_room(room)
-    
     if room in rooms and sid in rooms[room]:
-        rooms[room].remove(sid)
-        emit('peer_left', {'sid': sid}, to=room, include_self=False)
-        print(f"Peer {sid} abandonó la sala {room}. Peers restantes: {rooms[room]}")
+        username = rooms[room].pop(sid)
+        emit('peer_left', {'sid': sid, 'username': username}, to=room, include_self=False)
 
 @socketio.on('signal')
 def on_signal(data):
     target_sid = data['target_sid']
     caller_sid = request.sid
     signal_data = data['signal']
-    
     emit('signal', {
         'caller_sid': caller_sid,
-        'signal': signal_data
+        'signal': signal_data,
+        'caller_username': current_user.username
     }, room=target_sid)
 
 @socketio.on('disconnect')
 def on_disconnect():
     sid = request.sid
-    for room, sids in list(rooms.items()):
-        if sid in sids:
-            sids.remove(sid)
-            emit('peer_left', {'sid': sid}, to=room)
-            print(f"Peer {sid} se desconectó. Peers restantes en {room}: {sids}")
+    for room, sids_with_users in list(rooms.items()):
+        if sid in sids_with_users:
+            username = sids_with_users.pop(sid)
+            emit('peer_left', {'sid': sid, 'username': username}, to=room)
             break
 
-# --- Bloque para iniciar la aplicación ---
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+
