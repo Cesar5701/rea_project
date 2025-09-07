@@ -4,7 +4,6 @@ DB = "rea.db"
 conn = sqlite3.connect(DB)
 cur = conn.cursor()
 
-# Modifica esta sección
 cur.execute("""
     CREATE TABLE IF NOT EXISTS recursos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -15,16 +14,16 @@ cur.execute("""
     cid TEXT,
     filename TEXT,
     embedding BLOB,
-    user_id INTEGER, -- AÑADE ESTA LÍNEA
+    user_id INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES usuarios (id) -- AÑADE ESTA LÍNEA
+    FOREIGN KEY (user_id) REFERENCES usuarios (id)
     )
 """)
 
 cur.execute("""
     CREATE TABLE IF NOT EXISTS usuarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'user'
     )

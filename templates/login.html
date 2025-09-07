@@ -7,8 +7,9 @@
   
   <form action="{{ url_for('login') }}" method="post" class="space-y-6">
     <div>
-      <label for="username" class="block font-medium text-gray-700">Nombre de Usuario</label>
-      <input type="text" name="username" id="username" class="w-full mt-1 p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+      <!-- MEJORA: Se cambia a 'email' -->
+      <label for="email" class="block font-medium text-gray-700">Correo Electrónico Institucional</label>
+      <input type="email" name="email" id="email" class="w-full mt-1 p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
     </div>
     
     <div>
