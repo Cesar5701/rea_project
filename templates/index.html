@@ -92,5 +92,33 @@
     </div>
   </footer>
 
+  <!-- MEJORA: Script global para cierre de sesión por inactividad -->
+  {% if current_user.is_authenticated %}
+  <script>
+    let inactivityTimer = null;
+    const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutos en milisegundos
+
+    function logoutUser() {
+      // Notificar al usuario antes de redirigir
+      alert("Has sido desconectado por inactividad.");
+      // Redirigir a la ruta de logout para una desconexión segura en el servidor
+      window.location.href = "{{ url_for('logout') }}";
+    }
+
+    function resetInactivityTimer() {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(logoutUser, INACTIVITY_TIMEOUT);
+    }
+
+    // Eventos que indican actividad y reinician el temporizador
+    window.onload = resetInactivityTimer;
+    document.onmousemove = resetInactivityTimer;
+    document.onkeypress = resetInactivityTimer;
+    document.onclick = resetInactivityTimer;
+    document.onscroll = resetInactivityTimer;
+    document.ontouchstart = resetInactivityTimer;
+  </script>
+  {% endif %}
+
 </body>
 </html>
