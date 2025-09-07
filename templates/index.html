@@ -96,7 +96,7 @@
   {% if current_user.is_authenticated %}
   <script>
     let inactivityTimer = null;
-    const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutos en milisegundos
+    const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutos en milisegundos
 
     function logoutUser() {
       // Notificar al usuario antes de redirigir

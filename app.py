@@ -18,7 +18,7 @@ app.secret_key = os.getenv("SECRET_KEY", "devsecret")
 
 # 2. CONFIGURACIÓN DE EXPIRACIÓN DE SESIÓN EN EL BACKEND
 # Se establece la duración máxima de inactividad de una sesión en 10 minutos.
-app.permanent_session_lifetime = timedelta(minutes=5)
+app.permanent_session_lifetime = timedelta(minutes=6)
 
 socketio = SocketIO(app)
 
