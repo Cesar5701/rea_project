@@ -1,5 +1,5 @@
 const socket = io();
-let peers = {}; // Clave: socket.id del otro peer, Valor: instancia de SimplePeer
+let peers = {}; // Clave: socket.id del otro peer, Valor: { peer: instancia de SimplePeer, username: 'nombre' }
 let roomName = null;
 let logEl = null;
 
@@ -9,10 +9,16 @@ function log(msg) {
   logEl.scrollTop = logEl.scrollHeight;
 }
 
+// --- MEJORA: Función para loguear eventos con estilo ---
+function logEvent(message) {
+    log(`<span class="italic text-gray-500">${message}</span>`);
+}
+
+
 function join() {
   roomName = document.getElementById('room').value || 'default';
   socket.emit('join', { room: roomName });
-  log("Conectado a sala: " + roomName);
+  logEvent("Conectado a sala: " + roomName);
 }
 
 function leave() {
@@ -20,24 +26,22 @@ function leave() {
     socket.emit('leave', { room: roomName });
     roomName = null;
   }
-  // Destruir todas las conexiones P2P
   for (const sid in peers) {
-    if (peers[sid]) {
-      peers[sid].destroy();
+    if (peers[sid] && peers[sid].peer) {
+      peers[sid].peer.destroy();
     }
   }
   peers = {};
-  log("Saliste de la sala");
+  logEvent("Saliste de la sala.");
 }
 
-function createPeer(targetSid, initiator = false) {
-  log(`Creando conexión con peer: ${targetSid}`);
+function createPeer(targetSid, username, initiator = false) {
+  logEvent(`Creando conexión con ${username}...`);
   const peer = new SimplePeer({
     initiator,
     trickle: true,
   });
 
-  // Cuando tenemos una señal, la enviamos al peer específico a través del servidor
   peer.on('signal', signal => {
     socket.emit('signal', {
       target_sid: targetSid,
@@ -46,7 +50,7 @@ function createPeer(targetSid, initiator = false) {
   });
 
   peer.on('connect', () => {
-    log(`Conexión P2P establecida con ${targetSid} ✅`);
+    logEvent(`Conexión P2P establecida con ${username} ✅`);
   });
 
   peer.on('data', buffer => {
@@ -54,32 +58,29 @@ function createPeer(targetSid, initiator = false) {
   });
   
   peer.on('close', () => {
-    log(`Conexión con ${targetSid} cerrada.`);
+    logEvent(`Conexión con ${peers[targetSid]?.username || 'un usuario'} cerrada.`);
     delete peers[targetSid];
   });
 
   peer.on('error', err => {
-    log(`Error en conexión con ${targetSid}: ${err.message}`);
+    logEvent(`Error en conexión con ${peers[targetSid]?.username || 'un usuario'}: ${err.message}`);
     delete peers[targetSid];
   });
 
   return peer;
 }
 
-// --- Manejo de Datos (mensajes, archivos) ---
-
 function handleData(buffer, fromSid) {
-    // Primero, intenta decodificar el buffer para ver si es un mensaje de texto.
     let msg = '';
     try {
         msg = new TextDecoder().decode(buffer);
     } catch (e) {
-        // Si falla la decodificación, es muy probable que sea un chunk binario.
+        // No es texto
     }
 
-    const peerState = peers[fromSid] || {};
+    const peerState = peers[fromSid];
+    if (!peerState) return;
 
-    // Si estamos en medio de una transferencia de archivo para este peer...
     if (peerState._fileMeta) {
         if (msg === "FILEEND") {
             const blob = new Blob(peerState._fileChunks);
@@ -90,61 +91,62 @@ function handleData(buffer, fromSid) {
             a.textContent = `Descargar ${peerState._fileMeta.name}`;
             a.click();
             URL.revokeObjectURL(url);
-            log(`Archivo de ${fromSid} recibido y descargado ✅`);
+            logEvent(`Archivo de ${peerState.username} recibido y descargado ✅`);
             
-            // Limpiar el estado de la transferencia
             delete peerState._fileMeta;
             delete peerState._fileChunks;
         } else {
-            // Es un chunk de archivo, lo guardamos.
             peerState._fileChunks.push(buffer);
         }
     } 
-    // Si no, verificamos si es el inicio de un archivo o un mensaje de texto.
     else if (msg.startsWith("FILEMETA::")) {
         const meta = JSON.parse(msg.replace("FILEMETA::", ""));
         peerState._fileMeta = meta;
         peerState._fileChunks = [];
-        log(`Recibiendo archivo de ${fromSid}: ${meta.name} (${meta.size} bytes)`);
+        logEvent(`Recibiendo archivo de ${peerState.username}: ${meta.name} (${meta.size} bytes)`);
     } else {
-        // Es un mensaje de texto normal.
-        log(`${fromSid}: ${msg}`);
+        log(`<strong>${peerState.username}:</strong> ${msg}`);
     }
 }
 
 
-// --- Lógica de Señalización de Socket.IO ---
+// --- Lógica de Señalización de Socket.IO (Actualizada) ---
 
 socket.on('existing_peers', existingPeers => {
-  log("Peers existentes en la sala: " + existingPeers.join(', '));
-  existingPeers.forEach(sid => {
-    peers[sid] = createPeer(sid, true); // Nosotros iniciamos la conexión
-  });
+  logEvent("Peers existentes en la sala: " + Object.values(existingPeers).join(', '));
+  for (const sid in existingPeers) {
+      const username = existingPeers[sid];
+      const peer = createPeer(sid, username, true);
+      peers[sid] = { peer, username };
+  }
 });
 
 socket.on('peer_joined', payload => {
-  log(`Peer ${payload.sid} se ha unido. Creando conexión...`);
-  peers[payload.sid] = createPeer(payload.sid, false);
+  const { sid, username } = payload;
+  logEvent(`${username} se ha unido a la sala.`);
+  const peer = createPeer(sid, username, false);
+  peers[sid] = { peer, username };
 });
 
 socket.on('signal', payload => {
-  const { caller_sid, signal } = payload;
+  const { caller_sid, signal, caller_username } = payload;
   if (peers[caller_sid]) {
-    peers[caller_sid].signal(signal);
+    peers[caller_sid].peer.signal(signal);
   } else {
-    log(`Recibiendo señal de un nuevo peer ${caller_sid}. Creando conexión...`);
-    peers[caller_sid] = createPeer(caller_sid, false);
-    peers[caller_sid].signal(signal);
+    logEvent(`Recibiendo señal de un nuevo peer ${caller_username}.`);
+    const peer = createPeer(caller_sid, caller_username, false);
+    peers[caller_sid] = { peer, username: caller_username };
+    peers[caller_sid].peer.signal(signal);
   }
 });
 
 socket.on('peer_left', payload => {
-  const { sid } = payload;
-  log(`Peer ${sid} ha abandonado la sala.`);
-  if (peers[sid]) {
-    peers[sid].destroy();
-    delete peers[sid];
+  const { sid, username } = payload;
+  logEvent(`${username} ha abandonado la sala.`);
+  if (peers[sid] && peers[sid].peer) {
+    peers[sid].peer.destroy();
   }
+  delete peers[sid];
 });
 
 
@@ -154,12 +156,12 @@ function sendMsg() {
   const msg = document.getElementById('msg').value;
   if (!msg) return;
   
-  log("Tú: " + msg);
+  log("<strong>Tú:</strong> " + msg);
   document.getElementById('msg').value = '';
 
   for (const sid in peers) {
-    if (peers[sid] && peers[sid].connected) {
-      peers[sid].send(msg);
+    if (peers[sid] && peers[sid].peer && peers[sid].peer.connected) {
+      peers[sid].peer.send(msg);
     }
   }
 }
@@ -167,33 +169,29 @@ function sendMsg() {
 function sendFile() {
   const file = document.getElementById('fileInput').files[0];
   if (!file) {
-      log("Por favor, selecciona un archivo primero.");
+      logEvent("Por favor, selecciona un archivo primero.");
       return;
   }
 
   const meta = { name: file.name, size: file.size, type: file.type };
   const metaString = "FILEMETA::" + JSON.stringify(meta);
   
-  const chunkSize = 16 * 1024; // 16 KB
-
-  log("Preparando envío de archivo a todos los peers...");
+  logEvent("Preparando envío de archivo a todos los peers...");
 
   for (const sid in peers) {
-    if (peers[sid] && peers[sid].connected) {
-      const peer = peers[sid];
+    if (peers[sid] && peers[sid].peer && peers[sid].peer.connected) {
+      const peer = peers[sid].peer;
       
-      // Usamos una función autoejecutable para capturar el 'peer' correcto en cada iteración
       ((p, s) => {
-        p.send(metaString); // 1. Enviar metadata
-
+        p.send(metaString);
         const reader = file.stream().getReader();
         function pump() {
           reader.read().then(({done, value}) => {
             if (done) {
-              p.send("FILEEND"); // 3. Enviar señal de fin
+              p.send("FILEEND");
               return;
             }
-            p.send(value); // 2. Enviar chunk de archivo
+            p.send(value);
             pump();
           });
         }
@@ -201,6 +199,5 @@ function sendFile() {
       })(peer, sid);
     }
   }
-  log(`Archivo "${file.name}" enviado ✅`);
+  logEvent(`Archivo "${file.name}" enviado ✅`);
 }
-
