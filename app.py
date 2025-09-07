@@ -7,7 +7,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 from ipfs_client import upload_to_ipfs
 from nlp_utils import generar_embedding, clasificar_texto, embedding_to_blob, blob_to_embedding
-import passwordmeter  # Import the passwordmeter library
+import passwordmeter
 
 load_dotenv()
 DB = "rea.db"
@@ -52,12 +52,10 @@ def register():
         username = request.form['username']
         password = request.form['password']
         
-        # --- Password Strength Validation ---
         strength, _ = passwordmeter.test(password)
-        if strength < 0.5:  # Setting a threshold of 0.5 out of 1.0
+        if strength < 0.5:
             flash('La contraseña es muy débil. Por favor, elige una más segura.', 'error')
             return redirect(url_for('register'))
-        # --- End of Validation ---
         
         conn = get_conn()
         user_exists = conn.execute("SELECT id FROM usuarios WHERE username = ?", (username,)).fetchone()
@@ -96,7 +94,7 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-# --- Rutas de la Aplicación (sin cambios) ---
+# --- Rutas de la Aplicación ---
 
 @app.route('/webrtc')
 @login_required
@@ -111,10 +109,16 @@ def nuevo():
         descripcion = request.form.get('descripcion', '').strip()
         enlace_manual = request.form.get('enlace', '').strip()
         categoria_manual = request.form.get('categoria', '').strip() or None
+        
+        if not titulo:
+            flash("El título es un campo obligatorio.", "error")
+            return redirect(request.url)
+
         cid = None
         gateway_url = enlace_manual or None
         filename = None
         file = request.files.get('archivo')
+        
         if file and file.filename:
             content = file.read()
             filename = file.filename
@@ -123,10 +127,23 @@ def nuevo():
             except Exception as e:
                 flash(f"Error subiendo a IPFS: {e}", "error")
                 return redirect(request.url)
-        texto_para_clasificar = f"{titulo} {descripcion}"
-        categoria_detectada = categoria_manual or clasificar_texto(texto_para_clasificar)
-        emb_vec = generar_embedding(texto_para_clasificar)
-        emb_blob = embedding_to_blob(emb_vec)
+
+        # --- MEJORA: Bloque Try/Except para NLP ---
+        try:
+            texto_para_clasificar = f"{titulo} {descripcion}"
+            categoria_detectada = categoria_manual or clasificar_texto(texto_para_clasificar)
+            emb_vec = generar_embedding(texto_para_clasificar)
+            emb_blob = embedding_to_blob(emb_vec)
+            flash_message = f"Recurso guardado y clasificado: {categoria_detectada}"
+            flash_category = "success"
+        except Exception as e:
+            print(f"ERROR en NLP: {e}") # Log del error para depuración
+            categoria_detectada = categoria_manual or "Sin clasificar" # Valor por defecto
+            emb_blob = None # No guardar embedding si falla
+            flash_message = "Recurso guardado, pero ocurrió un error al clasificarlo automáticamente."
+            flash_category = "warning"
+        # --- FIN DE LA MEJORA ---
+
         conn = get_conn()
         conn.execute("""
             INSERT INTO recursos (titulo, descripcion, categoria, enlace, cid, filename, embedding, user_id)
@@ -134,15 +151,16 @@ def nuevo():
         """, (titulo, descripcion, categoria_detectada, gateway_url, cid, filename, emb_blob, current_user.id))
         conn.commit()
         conn.close()
-        flash("Recurso guardado y clasificado: " + categoria_detectada, "success")
+        
+        flash(flash_message, flash_category)
         return redirect(url_for('recursos'))
+        
     return render_template('nuevo.html')
 
 @app.route('/recursos')
 @login_required
 def recursos():
     conn = get_conn()
-    # Consulta modificada para obtener TODOS los recursos, sin filtrar por usuario
     recursos_data = conn.execute("SELECT * FROM recursos ORDER BY id DESC").fetchall()
     conn.close()
     return render_template("recursos.html", recursos=recursos_data)
@@ -153,20 +171,29 @@ def buscar_semantico():
     if request.method == 'POST':
         q = request.form.get('q', '').strip()
         top_k = int(request.form.get('k', 5))
+
+        if not q:
+            flash("Por favor, introduce una consulta para buscar.", "error")
+            return render_template('buscar_semantico.html')
+
         q_emb = generar_embedding(q)
         conn = get_conn()
         rows = conn.execute("SELECT id, titulo, descripcion, categoria, enlace, cid, embedding FROM recursos").fetchall()
         conn.close()
+        
         import numpy as np
         results = []
         for r in rows:
             if not r["embedding"]: continue
             try:
                 emb_stored = blob_to_embedding(r["embedding"])
+                # Añadir una pequeña constante (epsilon) al denominador para evitar división por cero
                 cos = float(np.dot(q_emb, emb_stored) / (np.linalg.norm(q_emb) * np.linalg.norm(emb_stored) + 1e-9))
                 results.append({**dict(r), "score": cos})
-            except:
+            except Exception as e:
+                print(f"Error al procesar embedding del recurso ID {r['id']}: {e}")
                 continue
+                
         results_sorted = sorted(results, key=lambda x: x["score"], reverse=True)[:top_k]
         return render_template("resultados_busqueda.html", resultados=results_sorted, query=q)
     return render_template('buscar_semantico.html')
@@ -216,7 +243,7 @@ def on_signal(data):
 @socketio.on('disconnect')
 def on_disconnect():
     sid = request.sid
-    for room, sids in rooms.items():
+    for room, sids in list(rooms.items()):
         if sid in sids:
             sids.remove(sid)
             emit('peer_left', {'sid': sid}, to=room)
