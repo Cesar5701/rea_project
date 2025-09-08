@@ -11,6 +11,10 @@ from ipfs_client import upload_to_ipfs
 from nlp_utils import generar_embedding, clasificar_texto, embedding_to_blob, blob_to_embedding
 import passwordmeter
 
+# --- IMPORTACIONES PARA LA BÚSQUEDA SEMÁNTICA MEJORADA ---
+from vector_db import add_embedding as add_embedding_to_chroma
+from vector_db import query_similar
+
 load_dotenv()
 DB = "rea.db"
 app = Flask(__name__)
@@ -84,7 +88,8 @@ def register():
             return redirect(url_for('register'))
         
         hashed_password = generate_password_hash(password)
-        conn.execute("INSERT INTO usuarios (email, password_hash) VALUES (?, ?)", (email, hashed_password))
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO usuarios (email, password_hash) VALUES (?, ?)", (email, hashed_password))
         conn.commit()
         conn.close()
         flash('¡Registro exitoso! Por favor, inicia sesión con tu correo.', 'success')
@@ -146,6 +151,8 @@ def nuevo():
             except Exception as e:
                 flash(f"Error subiendo a IPFS: {e}", "error")
                 return redirect(request.url)
+        
+        emb_vec = None
         try:
             texto_para_clasificar = f"{titulo} {descripcion}"
             categoria_detectada = categoria_manual or clasificar_texto(texto_para_clasificar)
@@ -161,11 +168,18 @@ def nuevo():
             flash_category = "warning"
 
         conn = get_conn()
-        conn.execute("""
+        cursor = conn.cursor()
+        cursor.execute("""
             INSERT INTO recursos (titulo, descripcion, categoria, enlace, cid, filename, embedding, user_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (titulo, descripcion, categoria_detectada, gateway_url, cid, filename, emb_blob, current_user.id))
         conn.commit()
+        # --- MEJORA: Añadir a ChromaDB ---
+        if emb_vec is not None:
+            resource_id = cursor.lastrowid
+            metadata = {"titulo": titulo, "categoria": categoria_detectada}
+            add_embedding_to_chroma(resource_id, emb_vec, metadata)
+        # ---------------------------------
         conn.close()
         flash(flash_message, flash_category)
         return redirect(url_for('recursos'))
@@ -188,22 +202,35 @@ def buscar_semantico():
         if not q:
             flash("Por favor, introduce una consulta para buscar.", "error")
             return render_template('buscar_semantico.html')
+
+        # 1. Generar embedding para la consulta del usuario
         q_emb = generar_embedding(q)
+        
+        # 2. Buscar en ChromaDB los IDs y puntuaciones de los recursos más similares
+        ids, scores = query_similar(q_emb, top_k)
+
+        if not ids:
+            return render_template("resultados_busqueda.html", resultados=[], query=q)
+
+        # 3. Obtener los detalles completos de los recursos desde SQLite usando los IDs
         conn = get_conn()
-        rows = conn.execute("SELECT id, titulo, descripcion, categoria, enlace, cid, embedding FROM recursos").fetchall()
+        # El placeholder '?' se repite por cada ID encontrado
+        placeholders = ', '.join('?' for _ in ids)
+        query_sql = f"SELECT * FROM recursos WHERE id IN ({placeholders})"
+        # ChromaDB devuelve IDs como strings, los convertimos a enteros
+        recursos_dict = {str(r['id']): dict(r) for r in conn.execute(query_sql, [int(i) for i in ids]).fetchall()}
         conn.close()
-        import numpy as np
-        results = []
-        for r in rows:
-            if not r["embedding"]: continue
-            try:
-                emb_stored = blob_to_embedding(r["embedding"])
-                cos = float(np.dot(q_emb, emb_stored) / (np.linalg.norm(q_emb) * np.linalg.norm(emb_stored) + 1e-9))
-                results.append({**dict(r), "score": cos})
-            except:
-                continue
-        results_sorted = sorted(results, key=lambda x: x["score"], reverse=True)[:top_k]
+
+        # 4. Combinar los resultados de SQLite con las puntuaciones de ChromaDB
+        results_sorted = []
+        for i, resource_id_str in enumerate(ids):
+            recurso = recursos_dict.get(resource_id_str)
+            if recurso:
+                recurso['score'] = scores[i]
+                results_sorted.append(recurso)
+        
         return render_template("resultados_busqueda.html", resultados=results_sorted, query=q)
+
     return render_template('buscar_semantico.html')
 
 # --- Manejadores de Socket.IO para WebRTC ---
@@ -252,4 +279,4 @@ def on_disconnect():
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
-
+        
