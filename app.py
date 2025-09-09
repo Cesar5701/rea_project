@@ -16,7 +16,6 @@ from vector_db import add_embedding as add_embedding_to_chroma
 from vector_db import query_similar
 
 load_dotenv()
-DB = "rea.db"
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "devsecret")
 
@@ -55,7 +54,7 @@ def make_session_permanent():
     session.permanent = True
 
 def get_conn():
-    conn = sqlite3.connect(DB)
+    conn = sqlite3.connect(os.getenv("DATABASE_URL", "rea.db"))
     conn.row_factory = sqlite3.Row
     return conn
 

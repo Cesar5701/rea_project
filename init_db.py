@@ -1,7 +1,11 @@
 # init_db.py
 import sqlite3
-DB = "rea.db"
-conn = sqlite3.connect(DB)
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+DB_FILE = os.getenv("DATABASE_URL", "rea.db")
+conn = sqlite3.connect(DB_FILE)
 cur = conn.cursor()
 
 cur.execute("""
@@ -31,4 +35,4 @@ cur.execute("""
 
 conn.commit()
 conn.close()
-print("DB inicializada: rea.db")
+print(f"DB inicializada: {DB_FILE}")

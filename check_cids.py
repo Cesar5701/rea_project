@@ -1,7 +1,10 @@
 import sqlite3
 import requests
+import os
+from dotenv import load_dotenv
 
-DB_FILE = "rea.db"
+load_dotenv()
+DB_FILE = os.getenv("DATABASE_URL", "rea.db")
 
 def check_all_cids():
     conn = sqlite3.connect(DB_FILE)

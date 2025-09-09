@@ -3,8 +3,11 @@ import sqlite3
 from nlp_utils import blob_to_embedding
 from vector_db import add_embedding
 import sys
+import os
+from dotenv import load_dotenv
 
-DB_FILE = "rea.db"
+load_dotenv()
+DB_FILE = os.getenv("DATABASE_URL", "rea.db")
 
 def sync_database():
     """
