@@ -1,48 +1,48 @@
 import numpy as np
 from io import BytesIO
 
-# --- Pruebas de Acceso a Páginas Públicas ---
+# --- Public Page Access Tests ---
 
 def test_index_page_loads(client):
-    """Prueba que la página de inicio se carga correctamente para cualquier visitante."""
+    """Tests that the home page loads correctly for any visitor."""
     response = client.get('/')
     assert response.status_code == 200
     assert b"Bienvenido a la Plataforma de Recursos Educativos Abiertos" in response.data
-    assert b"Iniciar Sesi\xc3\xb3n" in response.data  # "Iniciar Sesión"
+    assert b"Iniciar Sesión" in response.data  # "Iniciar Sesión"
 
 def test_login_page_loads(client):
-    """Prueba que la página de login se carga correctamente."""
+    """Tests that the login page loads correctly."""
     response = client.get('/login')
     assert response.status_code == 200
-    assert b"Iniciar Sesi\xc3\xb3n" in response.data
+    assert b"Iniciar Sesión" in response.data
 
 def test_register_page_loads(client):
-    """Prueba que la página de registro se carga correctamente."""
+    """Tests that the registration page loads correctly."""
     response = client.get('/register')
     assert response.status_code == 200
     assert b"Crear una Cuenta" in response.data
 
-# --- Pruebas de Rutas Protegidas ---
+# --- Protected Routes Tests ---
 
 def test_protected_routes_redirect_anonymous_user(client):
     """
-    Prueba que las rutas protegidas redirigen a un usuario anónimo
-    a la página de inicio de sesión.
+    Tests that protected routes redirect an anonymous user
+    to the login page.
     """
     protected_routes = ['/nuevo', '/recursos', '/buscar_semantico', '/webrtc']
     for route in protected_routes:
         response = client.get(route, follow_redirects=True)
         assert response.status_code == 200
-        assert b"Iniciar Sesi\xc3\xb3n" in response.data, f"La ruta {route} no redirigio al login."
+        assert b"Iniciar Sesión" in response.data, f"La ruta {route} no redirigio al login."
 
-# --- Pruebas del Flujo de Autenticación ---
+# --- Authentication Flow Tests ---
 
 def test_full_auth_flow(client):
     """
-    Prueba el flujo completo de un usuario: registro, logout, login,
-    y acceso a una ruta protegida.
+    Tests the complete user flow: registration, logout, login,
+    and access to a protected route.
     """
-    # 1. Registrar un nuevo usuario
+    # 1. Register a new user
     response_register = client.post('/register', data={
         'email': 'testuser@alumno.buap.mx',
         'password': 'PasswordFuerte123!'
@@ -50,72 +50,72 @@ def test_full_auth_flow(client):
     
     assert response_register.status_code == 200
     assert b"Registro exitoso!" in response_register.data
-    assert b"inicia sesi\xc3\xb3n" in response_register.data # "inicia sesión"
+    assert b"inicia sesión" in response_register.data # "inicia sesión"
 
-    # 2. Intentar registrar al mismo usuario de nuevo debe fallar
+    # 2. Trying to register the same user again should fail
     response_register_fail = client.post('/register', data={
         'email': 'testuser@alumno.buap.mx',
         'password': 'PasswordFuerte123!'
     }, follow_redirects=True)
     assert response_register_fail.status_code == 200
-    assert b"Ese correo electr\xc3\xb3nico ya est\xc3\xa1 registrado." in response_register_fail.data
+    assert b"Ese correo electrónico ya está registrado." in response_register_fail.data
 
-    # 3. Hacer logout (asegura que la sesión se limpia si existiera)
+    # 3. Log out (ensures the session is cleared if it exists)
     response_logout = client.get('/logout', follow_redirects=True)
     assert response_logout.status_code == 200
-    assert b"Iniciar Sesi\xc3\xb3n" in response_logout.data
+    assert b"Iniciar Sesión" in response_logout.data
 
-    # 4. Iniciar sesión con credenciales incorrectas debe fallar
+    # 4. Logging in with incorrect credentials should fail
     response_login_fail = client.post('/login', data={
         'email': 'testuser@alumno.buap.mx',
         'password': 'passwordincorrecto'
     }, follow_redirects=True)
     assert response_login_fail.status_code == 200
-    assert b"Correo o contrase\xc3\xb1a incorrectos." in response_login_fail.data
+    assert b"Correo o contraseña incorrectos." in response_login_fail.data
 
-    # 5. Iniciar sesión con las credenciales correctas
+    # 5. Log in with the correct credentials
     response_login = client.post('/login', data={
         'email': 'testuser@alumno.buap.mx',
         'password': 'PasswordFuerte123!'
     }, follow_redirects=True)
     assert response_login.status_code == 200
     assert b"Bienvenido, <strong>testuser</strong>" in response_login.data
-    assert b"Cerrar Sesi\xc3\xb3n" in response_login.data # "Cerrar Sesión"
+    assert b"Cerrar Sesión" in response_login.data # "Cerrar Sesión"
 
-    # 6. Acceder a una ruta protegida ahora debe funcionar
+    # 6. Accessing a protected route should now work
     response_nuevo = client.get('/nuevo')
     assert response_nuevo.status_code == 200
-    assert b"A\xc3\xb1adir Nuevo Recurso" in response_nuevo.data # "Añadir Nuevo Recurso"
+    assert b"Añadir Nuevo Recurso" in response_nuevo.data # "Añadir Nuevo Recurso"
 
-# --- Pruebas de Funcionalidad Principal (con Mocking) ---
+# --- Core Functionality Tests (with Mocking) ---
 
 def test_create_new_resource_with_mocking(client, mocker):
     """
-    Prueba la creación de un nuevo recurso, simulando (mocking) las llamadas
-    a servicios externos como IPFS y los modelos de NLP para que las pruebas
-    sean rápidas y no dependan de servicios externos.
+    Tests the creation of a new resource, mocking calls
+    to external services like IPFS and NLP models so that the tests
+    are fast and do not depend on external services.
     """
-    # 1. Mockear las funciones externas que se llaman desde la ruta /nuevo
+    # 1. Mock the external functions that are called from the /nuevo route
     mocker.patch('app.upload_to_ipfs', return_value=('fake_cid_123', 'https://fake_cid_123.ipfs.w3s.link/test.txt'))
     mocker.patch('app.clasificar_texto', return_value='matemáticas')
-    # Hacemos que generar_embedding devuelva un array de numpy real
+    # Make generar_embedding return a real numpy array
     fake_embedding = np.random.rand(768).astype(np.float32)
     mocker.patch('app.generar_embedding', return_value=fake_embedding)
-    # Mockeamos el add a la BD vectorial, ya que no necesitamos probar ChromaDB aquí
+    # Mock the add to the vector DB, since we don't need to test ChromaDB here
     mocker.patch('app.add_embedding_to_chroma', return_value=None)
     
-    # 2. Necesitamos estar logueados para crear un recurso
+    # 2. We need to be logged in to create a resource
     client.post('/register', data={'email': 'creator@alumno.buap.mx', 'password': 'PasswordCreator123!'})
     client.post('/login', data={'email': 'creator@alumno.buap.mx', 'password': 'PasswordCreator123!'})
     
-    # 3. Preparar los datos del formulario, incluyendo un archivo simulado
+    # 3. Prepare the form data, including a simulated file
     form_data = {
         'titulo': 'Introducción al Cálculo',
         'descripcion': 'Un recurso sobre derivadas e integrales.',
         'archivo': (BytesIO(b"Este es el contenido del archivo de prueba."), 'calculo_intro.txt')
     }
 
-    # 4. Enviar la petición POST para crear el recurso
+    # 4. Send the POST request to create the resource
     response = client.post(
         '/nuevo', 
         data=form_data, 
@@ -123,10 +123,10 @@ def test_create_new_resource_with_mocking(client, mocker):
         follow_redirects=True
     )
 
-    # 5. Verificar que todo funcionó como se esperaba
+    # 5. Verify that everything worked as expected
     assert response.status_code == 200
-    # Mensaje de éxito
-    assert b"Recurso guardado y clasificado: matem\xc3\xa1ticas" in response.data
-    # El nuevo recurso debe aparecer en la página de recursos
-    assert b"Introducci\xc3\xb3n al C\xc3\xa1lculo" in response.data # "Introducción al Cálculo"
+    # Success message
+    assert b"Recurso guardado y clasificado: matemáticas" in response.data
+    # The new resource should appear on the resources page
+    assert b"Introducción al Cálculo" in response.data # "Introducción al Cálculo"
     assert b"Un recurso sobre derivadas e integrales." in response.data

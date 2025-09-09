@@ -3,11 +3,16 @@ import sqlite3
 import os
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 load_dotenv()
+# Get the database file path from environment variables, with a default value
 DB_FILE = os.getenv("DATABASE_URL", "rea.db")
+
+# Connect to the SQLite database
 conn = sqlite3.connect(DB_FILE)
 cur = conn.cursor()
 
+# Create the 'recursos' table if it doesn't exist
 cur.execute("""
     CREATE TABLE IF NOT EXISTS recursos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,6 +29,7 @@ cur.execute("""
     )
 """)
 
+# Create the 'usuarios' table if it doesn't exist
 cur.execute("""
     CREATE TABLE IF NOT EXISTS usuarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,6 +39,7 @@ cur.execute("""
     )
 """)
 
+# Commit the changes and close the connection
 conn.commit()
 conn.close()
-print(f"DB inicializada: {DB_FILE}")
+print(f"DB initialized: {DB_FILE}")

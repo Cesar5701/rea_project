@@ -6,20 +6,23 @@ import sys
 import os
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 load_dotenv()
+# Get the database file path from environment variables, with a default value
 DB_FILE = os.getenv("DATABASE_URL", "rea.db")
 
 def sync_database():
     """
-    Lee todos los recursos de la base de datos SQLite y los añade a ChromaDB.
-    Este script es 'idempotente', lo que significa que puedes ejecutarlo varias veces
-    y no duplicará las entradas gracias al uso de IDs únicos en ChromaDB.
+    Reads all resources from the SQLite database and adds them to ChromaDB.
+    This script is 'idempotent', meaning you can run it multiple times
+    and it will not duplicate entries thanks to the use of unique IDs in ChromaDB.
     """
     try:
+        # Connect to the SQLite database
         conn = sqlite3.connect(DB_FILE)
         conn.row_factory = sqlite3.Row
         
-        # Seleccionamos solo los recursos que tienen un embedding
+        # Select only the resources that have an embedding
         recursos = conn.execute("SELECT id, titulo, categoria, embedding FROM recursos WHERE embedding IS NOT NULL").fetchall()
         conn.close()
     except sqlite3.Error as e:
@@ -37,17 +40,17 @@ def sync_database():
         resource_id = r['id']
         
         try:
-            # Convertimos el BLOB a un vector numpy
+            # Convert the BLOB to a numpy vector
             embedding_vector = blob_to_embedding(r['embedding'])
             
-            # Preparamos los metadatos que queremos almacenar en ChromaDB
-            # Esto es útil para filtrar búsquedas en el futuro
+            # Prepare the metadata we want to store in ChromaDB
+            # This is useful for filtering searches in the future
             metadata = {
                 "titulo": r['titulo'],
                 "categoria": r['categoria'] if r['categoria'] else "Sin clasificar"
             }
             
-            # Añadimos el recurso a la base de datos vectorial
+            # Add the resource to the vector database
             add_embedding(resource_id, embedding_vector, metadata)
             count += 1
         except Exception as e:

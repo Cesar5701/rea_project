@@ -3,30 +3,30 @@ import sqlite3
 import os
 from app import app as flask_app
 
-# Ubicación de la base de datos de pruebas
+# Location of the test database
 TEST_DB = "test_rea.db"
 
 @pytest.fixture(scope="module")
 def app():
     """
-    Fixture de nivel de módulo para crear y configurar la aplicación Flask
-    una vez por cada sesión de pruebas.
+    Module-level fixture to create and configure the Flask application
+    once per test session.
     """
-    # Configuración para el entorno de pruebas
+    # Configuration for the test environment
     flask_app.config.update({
         "TESTING": True,
         "SECRET_KEY": "testing-secret-key",
-        "WTF_CSRF_ENABLED": False,  # Deshabilitar CSRF para pruebas de formularios
+        "WTF_CSRF_ENABLED": False,  # Disable CSRF for form tests
         "LOGIN_DISABLED": False,
         "DATABASE": TEST_DB,
     })
 
-    # --- Creación de la base de datos de pruebas ---
-    # Asegurarnos de que no exista una DB de pruebas anterior
+    # --- Creation of the test database ---
+    # Make sure no previous test DB exists
     if os.path.exists(TEST_DB):
         os.remove(TEST_DB)
 
-    # Conectar y crear las tablas usando el esquema de init_db.py
+    # Connect and create the tables using the schema from init_db.py
     conn = sqlite3.connect(TEST_DB)
     cur = conn.cursor()
     cur.execute("""
@@ -55,10 +55,10 @@ def app():
     conn.commit()
     conn.close()
     
-    # Cedemos la aplicación a las pruebas
+    # Yield the application to the tests
     yield flask_app
 
-    # --- Limpieza después de que todas las pruebas del módulo hayan terminado ---
+    # --- Cleanup after all module tests have finished ---
     if os.path.exists(TEST_DB):
         os.remove(TEST_DB)
 
@@ -66,8 +66,8 @@ def app():
 @pytest.fixture()
 def client(app):
     """
-    Un cliente de pruebas para la aplicación.
-    Se ejecuta para cada función de prueba.
+    A test client for the application.
+    Runs for each test function.
     """
     return app.test_client()
 
@@ -75,6 +75,6 @@ def client(app):
 @pytest.fixture()
 def runner(app):
     """
-    Un runner para ejecutar comandos CLI de la app.
+    A runner to execute CLI commands of the app.
     """
     return app.test_cli_runner()
