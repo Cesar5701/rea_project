@@ -1,66 +1,69 @@
 import pytest
 import sqlite3
 import os
-from app import app as flask_app
+import sys
 
-# Location of the test database
-TEST_DB = "test_rea.db"
+# --- FIX FOR IMPORT ERROR ---
+# Add the project root directory to the Python path.
+# This allows pytest to find the 'app' package.
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+# --- END OF FIX ---
 
-@pytest.fixture(scope="module")
+from app import create_app
+from config import TestingConfig
+
+@pytest.fixture(scope='module')
 def app():
     """
     Module-level fixture to create and configure the Flask application
-    once per test session.
+    once per test session, using the testing configuration.
     """
-    # Configuration for the test environment
-    flask_app.config.update({
-        "TESTING": True,
-        "SECRET_KEY": "testing-secret-key",
-        "WTF_CSRF_ENABLED": False,  # Disable CSRF for form tests
-        "LOGIN_DISABLED": False,
-        "DATABASE": TEST_DB,
-    })
-
-    # --- Creation of the test database ---
-    # Make sure no previous test DB exists
-    if os.path.exists(TEST_DB):
-        os.remove(TEST_DB)
-
-    # Connect and create the tables using the schema from init_db.py
-    conn = sqlite3.connect(TEST_DB)
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'user'
-        )
-    """)
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS recursos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            titulo TEXT NOT NULL,
-            descripcion TEXT,
-            categoria TEXT,
-            enlace TEXT,
-            cid TEXT,
-            filename TEXT,
-            embedding BLOB,
-            user_id INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES usuarios (id)
-        )
-    """)
-    conn.commit()
-    conn.close()
+    # FIX: create_app returns a tuple (app, socketio). We only need the app object here.
+    flask_app, _ = create_app(config_class=TestingConfig)
     
-    # Yield the application to the tests
+    # Get the test database path from the app config.
+    db_path = flask_app.config['DATABASE_URL']
+    
+    # Make sure no previous test DB exists.
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
+    # Establish the test database schema within the application context.
+    with flask_app.app_context():
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'user'
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS recursos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                titulo TEXT NOT NULL,
+                descripcion TEXT,
+                categoria TEXT,
+                enlace TEXT,
+                cid TEXT,
+                filename TEXT,
+                embedding BLOB,
+                user_id INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES usuarios (id)
+            )
+        """)
+        conn.commit()
+        conn.close()
+    
     yield flask_app
 
     # --- Cleanup after all module tests have finished ---
-    if os.path.exists(TEST_DB):
-        os.remove(TEST_DB)
+    if os.path.exists(db_path):
+        os.remove(db_path)
 
 
 @pytest.fixture()
