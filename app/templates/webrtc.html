@@ -1,29 +1,35 @@
+<!--
+This template provides the WebRTC video conferencing and file sharing functionality.
+It extends the base `index.html` template.
+-->
 {% extends "index.html" %}
 {% block title %}Sala P2P (WebRTC){% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+<div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg border border-gray-200">
   <div class="text-center mb-8">
-      <h2 class="text-3xl font-bold text-blue-800">Sala de Colaboración P2P</h2>
+      <h2 class="text-2xl sm:text-3xl font-bold text-blue-800">Sala de Colaboración P2P</h2>
       <p class="text-gray-500 mt-2">Comunícate y comparte archivos directamente con otros usuarios.</p>
   </div>
   
   <div class="space-y-6">
     <div class="p-4 bg-gray-50 rounded-lg border">
       <label for="room" class="block font-semibold text-gray-700">Nombre de la Sala</label>
-      <div class="flex items-center space-x-2 mt-2">
+      <!-- Room Controls: stack on mobile -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 mt-2">
         <input id="room" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition" placeholder="ej. proyecto-final-2025"/>
-        <button onclick="join()" class="bg-blue-800 text-white font-bold px-5 py-3 rounded-lg hover:bg-opacity-90 transition shadow-md whitespace-nowrap">Unirme</button>
-        <button onclick="leave()" class="bg-gray-600 text-white font-bold px-5 py-3 rounded-lg hover:bg-gray-700 transition shadow-md">Salir</button>
+        <button onclick="join()" class="w-full sm:w-auto bg-blue-800 text-white font-bold px-5 py-3 rounded-lg hover:bg-opacity-90 transition shadow-md whitespace-nowrap">Unirme</button>
+        <button onclick="leave()" class="w-full sm:w-auto bg-gray-600 text-white font-bold px-5 py-3 rounded-lg hover:bg-gray-700 transition shadow-md">Salir</button>
       </div>
     </div>
 
     <div>
       <h3 class="font-semibold text-gray-700 mb-2">Chat de la Sala</h3>
       <div id="log" class="bg-gray-100 p-4 h-64 overflow-auto rounded-lg border font-mono text-sm text-gray-800"></div>
-      <div class="flex space-x-2 mt-2">
+      <!-- Chat Controls: stack on mobile -->
+      <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-2">
         <input id="msg" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition" placeholder="Escribe un mensaje..."/>
-        <button onclick="sendMsg()" class="bg-yellow-500 text-blue-800 font-bold px-5 py-3 rounded-lg hover:bg-yellow-600 transition shadow-md">Enviar</button>
+        <button onclick="sendMsg()" class="w-full sm:w-auto bg-yellow-500 text-blue-800 font-bold px-5 py-3 rounded-lg hover:bg-yellow-600 transition shadow-md">Enviar</button>
       </div>
     </div>
 
@@ -35,11 +41,10 @@
   </div>
 </div>
 
-<!-- Dependencias de JavaScript -->
+<!-- JavaScript Dependencies -->
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
 
-<!-- Tu código de cliente -->
+<!-- Your client-side code -->
 <script src="{{ url_for('static', filename='webrtc.js') }}"></script>
 {% endblock %}
-

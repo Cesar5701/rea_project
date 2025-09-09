@@ -1,14 +1,19 @@
-<!DOCTYPE html>
+<!--
+This template displays a list of educational resources.
+It extends the base `index.html` template.
+-->
 {% extends "index.html" %}
 {% block title %}Lista de Recursos{% endblock %}
 {% block content %}
-  <div class="flex justify-between items-center mb-6">
-    <h2 class="text-3xl font-bold text-buap-blue">Recursos Educativos</h2>
-    <a href="{{ url_for('resources.nuevo') }}" class="bg-buap-gold text-buap-blue font-bold px-5 py-2 rounded-md hover:bg-buap-gold-dark transition shadow">
-      + Añadir Nuevo
+  <!-- Responsive Header: stacks vertically on small screens -->
+  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-4 sm:space-y-0">
+    <h2 class="text-2xl sm:text-3xl font-bold text-buap-blue text-center sm:text-left">Recursos Educativos</h2>
+    <a href="{{ url_for('resources.nuevo') }}" class="w-full sm:w-auto bg-buap-gold text-buap-blue font-bold px-5 py-2 rounded-md hover:bg-buap-gold-dark transition shadow text-center">
+      + Agregar Nuevo
     </a>
   </div>
 
+  <!-- Responsive Grid: 1 column on mobile, 2 on tablet, 3 on desktop -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for r in recursos %}
       <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-200 flex flex-col">

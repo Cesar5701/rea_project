@@ -1,3 +1,7 @@
+<!--
+This template displays the results of a semantic search query.
+It extends the base `index.html` template.
+-->
 {% extends "index.html" %}
 {% block title %}Resultados de Búsqueda{% endblock %}
 {% block content %}
@@ -25,7 +29,7 @@
     {% else %}
       <div class="text-center py-12 bg-white rounded-xl shadow-md border">
         <h3 class="text-xl font-medium text-gray-700">No se encontraron resultados</h3>
-        <p class="text-gray-500 mt-2">Intenta con otra consulta o palabras más generales.</p>
+        <p class="text-gray-500 mt-2">Intenta otra consulta o palabras más generales.</p>
       </div>
     {% endfor %}
   </div>

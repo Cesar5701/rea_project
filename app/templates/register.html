@@ -1,3 +1,7 @@
+<!--
+This template provides the user registration interface.
+It extends the base `index.html` template.
+-->
 {% extends "index.html" %}
 {% block title %}Registrarse{% endblock %}
 
@@ -7,7 +11,7 @@
   
   <form action="{{ url_for('auth.register') }}" method="post" class="space-y-6">
     <div>
-      <!-- MEJORA: Se cambia a 'email' -->
+      <!-- IMPROVEMENT: Changed to 'email' -->
       <label for="email" class="block font-medium text-gray-700">Correo Electrónico Institucional</label>
       <input type="email" name="email" id="email" placeholder="ejemplo@alumno.buap.mx" class="w-full mt-1 p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
     </div>
