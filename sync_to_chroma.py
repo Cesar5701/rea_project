@@ -1,39 +1,34 @@
-# sync_to_chroma.py
 import sqlite3
+import sys
 from nlp_utils import blob_to_embedding
 from vector_db import add_embedding
-import sys
-import os
-from dotenv import load_dotenv
+from config import Config
 
-# Load environment variables from .env file
-load_dotenv()
 # Get the database file path from environment variables, with a default value
-DB_FILE = os.getenv("DATABASE_URL", "rea.db")
+DB_FILE = Config.DATABASE_URL
 
 def sync_database():
     """
-    Reads all resources from the SQLite database and adds them to ChromaDB.
-    This script is 'idempotent', meaning you can run it multiple times
-    and it will not duplicate entries thanks to the use of unique IDs in ChromaDB.
+    Reads all resources from the SQLite database and syncs them to ChromaDB.
+    This script is idempotent, meaning it can be run multiple times without
+    creating duplicate entries.
     """
     try:
         # Connect to the SQLite database
         conn = sqlite3.connect(DB_FILE)
         conn.row_factory = sqlite3.Row
-        
-        # Select only the resources that have an embedding
+        # Select only resources that have an embedding.
         recursos = conn.execute("SELECT id, titulo, categoria, embedding FROM recursos WHERE embedding IS NOT NULL").fetchall()
         conn.close()
     except sqlite3.Error as e:
-        print(f"Error al leer la base de datos SQLite: {e}")
+        print(f"Error reading SQLite database: {e}")
         sys.exit(1)
 
     if not recursos:
-        print("No se encontraron recursos con embeddings en la base de datos.")
+        print("No resources with embeddings found in the database.")
         return
 
-    print(f"Sincronizando {len(recursos)} recursos a ChromaDB...")
+    print(f"Syncing {len(recursos)} resources to ChromaDB...")
     
     count = 0
     for r in recursos:
@@ -47,16 +42,16 @@ def sync_database():
             # This is useful for filtering searches in the future
             metadata = {
                 "titulo": r['titulo'],
-                "categoria": r['categoria'] if r['categoria'] else "Sin clasificar"
+                "categoria": r['categoria'] if r['categoria'] else "Unclassified"
             }
             
             # Add the resource to the vector database
             add_embedding(resource_id, embedding_vector, metadata)
             count += 1
         except Exception as e:
-            print(f"No se pudo procesar el recurso con ID {resource_id}: {e}")
+            print(f"Could not process resource with ID {resource_id}: {e}")
             
-    print(f"\nSincronización completa. Se procesaron {count} de {len(recursos)} recursos.")
+    print(f"\nSync complete. Processed {count} of {len(recursos)} resources.")
 
 if __name__ == '__main__':
     sync_database()

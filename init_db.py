@@ -1,14 +1,8 @@
-# init_db.py
 import sqlite3
-import os
-from dotenv import load_dotenv
+from config import Config
 
-# Load environment variables from .env file
-load_dotenv()
-# Get the database file path from environment variables, with a default value
-DB_FILE = os.getenv("DATABASE_URL", "rea.db")
-
-# Connect to the SQLite database
+# Get the database file path from our central config.
+DB_FILE = Config.DATABASE_URL
 conn = sqlite3.connect(DB_FILE)
 cur = conn.cursor()
 
@@ -42,4 +36,5 @@ cur.execute("""
 # Commit the changes and close the connection
 conn.commit()
 conn.close()
-print(f"DB initialized: {DB_FILE}")
+print(f"Database initialized: {DB_FILE}")
+

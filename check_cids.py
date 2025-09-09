@@ -1,12 +1,9 @@
 import sqlite3
 import requests
-import os
-from dotenv import load_dotenv
+from config import Config
 
-# Load environment variables from .env file
-load_dotenv()
-# Get the database file path from environment variables, with a default value
-DB_FILE = os.getenv("DATABASE_URL", "rea.db")
+# Get the database file path from our central config.
+DB_FILE = Config.DATABASE_URL
 
 def check_all_cids():
     """
@@ -20,7 +17,7 @@ def check_all_cids():
     cids_to_check = conn.execute("SELECT cid, filename FROM recursos WHERE cid IS NOT NULL").fetchall()
     conn.close()
 
-    print(f"Verificando {len(cids_to_check)} CIDs...")
+    print(f"Verifying {len(cids_to_check)} CIDs...")
 
     for recurso in cids_to_check:
         cid = recurso['cid']
@@ -31,11 +28,9 @@ def check_all_cids():
             # We use a HEAD request because it's faster, we only want the status
             response = requests.head(url, timeout=10)
             if response.status_code != 200:
-                print(f"[FALLO] CID: {cid} | Estado: {response.status_code}")
-            # else:
-            #     print(f"[OK] CID: {cid}")
+                print(f"[FAILED] CID: {cid} | Status: {response.status_code}")
         except requests.exceptions.RequestException as e:
-            print(f"[ERROR] CID: {cid} | No se pudo conectar: {e}")
+            print(f"[ERROR] CID: {cid} | Could not connect: {e}")
 
 if __name__ == '__main__':
     check_all_cids()
