@@ -1,7 +1,7 @@
 # vector_db.py
 import chromadb
 import numpy as np
-from nlp_utils import blob_to_embedding
+from .nlp_utils import blob_to_embedding
 
 # --- CLIENTE DE CHROMADB ---
 # Usamos PersistentClient para que la base de datos se guarde en el disco.
